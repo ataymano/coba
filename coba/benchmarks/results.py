@@ -82,7 +82,7 @@ class Result:
 
         return (l,s,b)
 
-    def standard_plot(self, select_learners: Sequence[int] = None,  show_err: bool = False, show_sd: bool = False, figsize=(12,4)) -> None:
+    def standard_plot(self, select_learners: Sequence[int] = None,  show_err: bool = False, show_sd: bool = False, figsize=(12,4), episode_factor=1) -> None:
 
         PackageChecker.matplotlib('Plots.standard_plot')
 
@@ -176,19 +176,28 @@ class Result:
         ax1 = fig.add_subplot(1,2,1) #type: ignore
         ax2 = fig.add_subplot(1,2,2) #type: ignore
 
-        for learner_id in learners:
-            _plot(ax1, learners[learner_id].full_name, indexes[learner_id], inmeans[learner_id], invariances[learner_id], incounts[learner_id])
-
-        ax1.set_title(f"Instantaneous Reward")
+        ax1.set_title(f"Progressive Reward")
         ax1.set_ylabel("Reward")
-        ax1.set_xlabel(f"{index_unit}")
+        ax1.set_xlabel(f"Steps")
+        ax1.set_xscale('log')
+        ax1.set_ylim([0, 1])
+
+        import numpy as np
 
         for learner_id in learners:
-            _plot(ax2, learners[learner_id].full_name, indexes[learner_id], cumeans[learner_id], cuvariances[learner_id], cucounts[learner_id])
+            batch_size = 1
+            if learner_id > 0:
+                batch_size = learners[learner_id].batchsize
+            if batch_size != 1:
+                batch_size = batch_size / episode_factor
+            _plot(ax1, learners[learner_id].full_name, indexes[learner_id], cumeans[learner_id], cuvariances[learner_id], cucounts[learner_id])
+            _plot(ax2, learners[learner_id].full_name, np.divide(indexes[learner_id], batch_size), cumeans[learner_id], cuvariances[learner_id], cucounts[learner_id])            
 
         ax2.set_title("Progressive Reward")
         #ax2.set_ylabel("Reward")
-        ax2.set_xlabel(f"{index_unit}")
+        ax2.set_xlabel(f"Episodes / {episode_factor}")
+        ax2.set_xscale('log')
+        ax2.set_ylim([0, 1])
 
         (bot1, top1) = ax1.get_ylim()
         (bot2, top2) = ax2.get_ylim()
