@@ -10,7 +10,7 @@ from typing import Any, Dict, Union, Sequence, overload
 
 from coba.random import CobaRandom
 from coba.tools import PackageChecker, redirect_stderr
-from coba.simulations import Context, Action, Reward
+from coba.simulations import Context, Action
 from coba.learners.core import Learner, Key
 
 class cb_explore_Formatter:
@@ -222,6 +222,9 @@ def _features_format(features: Union[Context,Action]) -> str:
         feature array a more advanced method may need to be implemented in the future...
     """
 
+    if isinstance(features, dict):
+        return " ". join([_feature_format(k,v) for k,v in features.items() if v is not None and v != 0 ])
+
     if not isinstance(features, collections.Sequence):
         features = (features,)
 
@@ -361,8 +364,14 @@ class VowpalLearner(Learner):
         """The parameters of the learner.
         
         See the base class for more information
-        """        
-        return {**self._learning.params(), **self._exploration.params()}        
+        """
+
+        params = {**self._learning.params(), **self._exploration.params()}
+
+        if self._flags != '':
+            params['flags'] = self._flags
+
+        return params
 
     def predict(self, key: Key, context: Context, actions: Sequence[Action]) -> Sequence[float]:
         """Determine a PMF with which to select the given actions.
